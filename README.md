@@ -4,3 +4,5 @@ In the semesters, I've made the Rmd notebooks available for download also on Can
 scaffolding the concepts through these notebooks and decided to put them on GithubLinks to an external site.This means you can access all the notebooks from Day 1, which might come in handy for this module.
 
 I hope that these notebooks will help your understanding to do even better in the course. 
+
+Sow Jin Sze, JSSOW
