@@ -6,7 +6,7 @@ scaffolding the concepts through these notebooks and decided to put them on Gith
 
 I hope that these notebooks will help your understanding to do even better in the course. 
 
-Sow Jin Sze, JSSOW
+Sow Jin Sze
 
 
 
