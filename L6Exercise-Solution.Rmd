@@ -1,0 +1,222 @@
+---
+---
+---
+
+![](images/SoC-DeptInfoSysAndAna_Blue.jpg)
+
+## BT1101 Introduction to Business Analytics
+
+## L6 Linear Regression
+
+The contents contained in this document may not be reproduced or distributed in any form or by any means without the written permission of the [Jin-Sze-Sow\@NUS](mailto:author@NUS){.email} other than the purpose for which it has been supplied
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+```
+
+### Exercise 1.0: Multivariate Regression Model
+
+-   Linear regression is a widely used machine learning algorithm for predicting a continuous target variable based on one or more independent variables.
+
+-   It assumes a linear relationship between the independent variables and the target variable.
+
+-   The goal of linear regression is to find the best-fitting line or hyperplane that minimizes the difference between the predicted values and the actual observed values.
+
+**Working with Used Cars Price Example**
+
+**Instructions:**
+
+The Toyota Data.csv provides information about all previous sales of used Toyota Corollas at the dealership. The data include the sales price and other information on the car, such as its age, mileage, fuel type, and engine size. Your task is to predict used car prices using this dataset.
+
+1)  Fit a multivariate regression model on the data: Use the `lm` function to model linear relationship between an outcome variable, y, and a set of predictor variables $X_1$,$X_2$,...,$X_p$ . ).
+
+2)  Estimation of regression coefficients: We don't know the entire population, we don't know the true values of $β_0$ and $β_1$. In practice, we must estimate these as best we can from the sample data.
+
+3)  Perform Regression Analysis
+
+4)  Prediction: Use the fitted model to predict the prices of used Toyota Corollas
+
+**Load the dataset from file**
+
+1.  Familiarize yourself with the getwd() and setwd() functions to manage your working directory. Import the dataset named 'L6-aToyota.csv' into a dataframe named 'usedcars' to gain insights into the data.
+
+2.  A good practice : Maintain the original data's integrity. Consider creating copies of the dataset if modifications are necessary.
+
+```{r import dataset}
+
+# Retrieve working directory
+getwd( ) 
+
+# Set working directory using setwd() function
+# setwd("C:\\yourfilepath")
+setwd("C:\\nbox\\Soc Acad Courses\\AY2024 Run 01\\Synchronous Lecture\\Week 6")
+
+# Load the dataset into 'usedcars' dataframe
+usedcars = read.csv(file = './L6-Toyota.csv',header = TRUE)
+
+# Display the first 6 rows of the dataframe
+head(usedcars)
+
+# check imported number of rows in the data frame
+nrow(usedcars)
+
+# check Fuel_Type variable
+table(usedcars$Fuel_Type)
+
+# inspect the data frame with str()
+str(usedcars)
+
+```
+
+**Selecting independent variables**
+
+3.  Choose the 6 independent variables: Age_08_04, KM, HP, Weight, CC, and Quarterly Tax, and include the dependent variable, Price.
+4.  Use pipe (**`%>%`**) to store these variables in a new dataframe, 'usedcars.selectedvar'
+
+```{r}
+# Use pipe to select the independent and dependent variables for model fitting
+usedcars.selectedvar = usedcars %>% select ( Age_08_04, KM, HP, Weight, CC, Quarterly_Tax, Price)
+
+```
+
+**Exploratory Data Analysis**
+
+5.  Perform exploratory data analysis (EDA) to identify potential issues and visualize the relationships between variables.
+6.  Utilize the pairs.panels function from the 'psych' package to create a scatter plot matrix.This allows for a comprehensive visualization of the relationships between multiple variables.
+
+```{r}
+# Load the 'psych' library for pairs.panels function
+library(psych) 
+
+# Create a Scatter Plot Matrix
+Scatter_Matrix <- pairs.panels ( usedcars.selectedvar[,  
+                            c("Age_08_04","KM","HP","Weight","CC","Quarterly_Tax","Price")], main = "Scatter Plot Matrix")
+
+# Interpretation of the Scatter Plot Matrix:  The plot shows that there is a reasonably good linear relationship between the price and the age, mileage, cylinder of a used car. 
+
+# Conclusion: Hence one can justifiably use Linear Regression to find a good fit of the data.
+
+```
+
+**Fit a multivariate regression model**
+
+```{r}
+
+# Use the lm() function in R is used to fit linear regression model
+fit_ml = lm ( Price ~ Age_08_04 + KM + HP + Weight + CC + Quarterly_Tax, 
+                    data = usedcars.selectedvar)
+
+# It returns an object of class "lm" representing the multivariate model
+names(fit_ml)
+# We can continue with regression analysis using the returned class components
+summary(fit_ml) 
+
+# Interpret the regression coefficient estimates
+summary(fit_ml)$coeff 
+
+```
+
+**Hypothesis test for the individual population slope parameter**
+
+7.  Let us have a closer look at the test of where we look at the single predictor, horsepower - hp$$H_0:\beta_hp=0\\ H_1:\beta_hp\neq0$$If the regression coefficient estimates and standard error are known, the formula is $$t \ statistic={(b}_i-0)\ /standard\ error$$
+
+```{r}
+# Compute t value mathematically for HP regression coefficient estimate
+beta.estimate <- summary(fit_ml)$coefficients["HP",c(1)]
+std.error <- summary(fit_ml)$coefficients["HP",c(2)]
+
+t_value <- beta.estimate/std.error  
+print(t_value)
+
+#Calculate p-value using the t-statistics for the t-test
+p_value <- 2 * pt(abs(t_value), nrow(usedcars.selectedvar)-6-1, lower.tail = FALSE)
+p_value
+
+
+
+```
+
+**Confidence Interval for individual population slope parameters**
+
+8.  A confidence interval for the individual regression coefficient or population slope parameter contains the true value of 𝛽 in all repeated samples.
+
+```{r}
+# Use the 95% confidence interval for the population slope parameters
+confint(fit_ml, level = 0.95)
+
+# We can compute 95% confidence interval for horsepower population slope parameter
+# lower CI limit
+lower<-coef(fit_ml)[[4]]-qt(1-0.05/2, nobs(fit_ml)-1-6)*coef(summary(fit_ml))[4,"Std. Error"]
+
+# upper CI limit
+upper<-coef(fit_ml)[[4]]+qt(1-0.05/2, nobs(fit_ml)-1-6)*coef(summary(fit_ml))[4,"Std. Error"]
+
+print(paste("95% CI HP slope parameter:" ,lower, upper))
+
+```
+
+**Prediction of used car prices**
+
+8.  Now that we know how to fit a Linear Regression model on your sample dataset, we can finally predicted prices for 3 used cars' data points. Cars 1, 2 and 3 are 5/10/18 years, 48000/90500,120200 mileage, 90/90/90 horsepower, 1165/1240/1275 in weight, 1800/1900/21200 CC and 140/210/300 in quarterly taxes.
+9.  In addition, we use predict() to find the prediction interval and confidence intervals.
+
+```{r}
+
+# Use the regression model for prediction of 3 used cars
+new.data = data.frame (Age_08_04 = c(5, 10, 18), KM = c(48000, 90500, 120200), HP                                   = c(90, 90, 90),  Weight = c(1165, 1240, 1275), CC =                         c(1800,1900,2100),Quarterly_Tax=c(140,210,300))
+
+# Compute the 95% confidence interval for the predicted price
+predci.fit_w = predict (fit_ml , newdata = new.data, interval = "confidence")
+predci.fit_w
+
+# Compute the 95% prediction interval for the predicted price
+pred.fit_w = predict (fit_ml , newdata = new.data, interval = "prediction")
+pred.fit_w
+
+
+```
+
+**Assumptions of the multivariate regression model**
+
+10. Linear regression has some limitations. It assumes a linear relationship between the variables, which may not hold in all cases. Therefore, it is important to assess the assumptions and limitations of linear regression before using it in a particular context. We are pretty much focusing on the errors (residuals) here
+
+Method 1: Residual plot (Plot "residuals against X" or "residuals against Fitted values)
+
+```{r}
+library(ggplot2)
+
+# Calculate residuals of the linear regression model
+  res = resid(fit_ml) 
+# Create a residual plot
+  plot(fitted(fit_ml),res)
+  
+# Add a horizon line at 0 to the residual plot.
+ abline(0,0)
+  
+```
+
+Method 2: Residual plot using plot ()
+
+```{r}
+  #Residual plot
+  plot(fit_ml,1)
+
+  # Q-Q plot: Test normally distributed error assumption. A normally looking sample   # data should scatter along the 45 degree line.
+  plot(fit_ml,2)
+  
+  #p-value is not less than 0.05, hence residuals are normally distributed
+  shapiro.test(residuals(fit_ml)) 
+
+```
+
+## Summary
+
+Linear regression is a widely used machine learning algorithm for predicting a continuous target variable based on one or more independent variables. It assumes a linear relationship between the independent variables and the target variable. The goal of linear regression is to find the best-fitting line or hyperplane that minimizes the difference between the predicted values and the actual observed values.
+
+One of the main advantages of linear regression is its simplicity and interpretability. The algorithm provides coefficients for each independent variable, allowing us to understand the magnitude and direction of their impact on the target variable. This makes it easier to explain and interpret the results of the model. Additionally, linear regression performs well when the underlying relationship between the variables is approximately linear, and it is computationally efficient, making it suitable for large datasets.
+
+However, linear regression has some limitations. It assumes a linear relationship between the variables, which may not hold in all cases. If the relationship is nonlinear, linear regression may not capture it accurately. Additionally, linear regression is sensitive to outliers, as they can heavily influence the line of best fit. Another limitation is that linear regression assumes that the independent variables are not strongly correlated with each other (i.e., no multicollinearity), as this can lead to unstable and unreliable coefficient estimates.
+
+In summary, linear regression is a simple and interpretable algorithm for predicting continuous target variables. Its pros include simplicity, interpretability, and efficiency. However, it has limitations in capturing nonlinear relationships, is sensitive to outliers, and assumes no multicollinearity. Therefore, it is important to assess the assumptions and limitations of linear regression before using it in a particular context.
