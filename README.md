@@ -1,4 +1,4 @@
-NUS BT1101 - Week 7 - 13 Predictive Analytics
+BT1101 - Week 7 - 13 Predictive Analytics
 
 Apart from the course materials shared here on Canvas, this is a collection of Rmd notebookds for my lecture topics. 
 In the semesters, I've made the Rmd notebooks available for download also on Canvas on a weekly basis. However, I've spent some time 
