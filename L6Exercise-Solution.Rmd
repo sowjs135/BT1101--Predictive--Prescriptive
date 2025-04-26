@@ -1,6 +1,6 @@
----
----
----
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
 
 ![](images/SoC-DeptInfoSysAndAna_Blue.jpg)
 
@@ -10,9 +10,9 @@
 
 The contents contained in this document may not be reproduced or distributed in any form or by any means without the written permission of the [Jin-Sze-Sow\@NUS](mailto:author@NUS){.email} other than the purpose for which it has been supplied
 
-```{r setup, include=FALSE}
-library(ggplot2)
-library(tidyr)
+```{r import dataset}
+library(ggplot2) 
+library(tidyr) 
 library(dplyr)
 ```
 
@@ -51,7 +51,7 @@ getwd( )
 
 # Set working directory using setwd() function
 # setwd("C:\\yourfilepath")
-setwd("C:\\nbox\\Soc Acad Courses\\AY2024 Run 01\\Synchronous Lecture\\Week 6")
+setwd("C:\\Users\\sowjs\\NUS Dropbox\\Jin Sze Sow\\Jin Sze Sow’s files\\Home\\Soc Acad Courses\\AY2025 Run 02\\Lecture\\Week 6")
 
 # Load the dataset into 'usedcars' dataframe
 usedcars = read.csv(file = './L6-Toyota.csv',header = TRUE)
@@ -76,8 +76,13 @@ str(usedcars)
 4.  Use pipe (**`%>%`**) to store these variables in a new dataframe, 'usedcars.selectedvar'
 
 ```{r}
+
+library(psych)
 # Use pipe to select the independent and dependent variables for model fitting
 usedcars.selectedvar = usedcars %>% select ( Age_08_04, KM, HP, Weight, CC, Quarterly_Tax, Price)
+
+pairs.panels ( usedcars.selectedvar[ , c("Age_08_04","KM","HP","Weight","CC","Quarterly_Tax","Price")], main = "Scatter Plot Matrix")
+
 
 ```
 
@@ -105,16 +110,22 @@ Scatter_Matrix <- pairs.panels ( usedcars.selectedvar[,
 ```{r}
 
 # Use the lm() function in R is used to fit linear regression model
-fit_ml = lm ( Price ~ Age_08_04 + KM + HP + Weight + CC + Quarterly_Tax, 
-                    data = usedcars.selectedvar)
+fit_ml = lm ( Price ~  ., data = usedcars.selectedvar)
+
+fit_ml = lm ( Price ~ Age_08_04 + KM + HP + Weight + CC + Quarterly_Tax,  data = usedcars.selectedvar )
 
 # It returns an object of class "lm" representing the multivariate model
-names(fit_ml)
+class(fit_ml)
 # We can continue with regression analysis using the returned class components
 summary(fit_ml) 
 
 # Interpret the regression coefficient estimates
 summary(fit_ml)$coeff 
+
+# show the estimated beta's
+fit_ml$coeff
+fit_ml$fit # show the fitted values 
+fit_ml$res # show the residuals
 
 ```
 
@@ -143,6 +154,7 @@ p_value
 8.  A confidence interval for the individual regression coefficient or population slope parameter contains the true value of 𝛽 in all repeated samples.
 
 ```{r}
+qt(1-0.05/2, nobs(fit_ml)-1-6)
 # Use the 95% confidence interval for the population slope parameters
 confint(fit_ml, level = 0.95)
 
@@ -157,6 +169,32 @@ print(paste("95% CI HP slope parameter:" ,lower, upper))
 
 ```
 
+\`
+
+```{r}
+#anova table for fitted model
+anova(fit_ml)
+# Root Mean Square Error
+
+mse<-anova(fit_ml)["Residuals", "Mean Sq"]
+mse
+sqrt(mse)
+
+
+sst<-sum(anova(fit_ml)[, "Sum Sq"])
+sst
+ssr<-sst-anova(fit_ml)["Residuals", "Sum Sq"]
+ssr/sst
+
+# F-statistics
+
+#SSB<-aov$`Sum Sq`[1]+aov$`Sum Sq`[2]+aov$`Sum Sq`[3]+aov$`Sum Sq`[4]+aov$`Sum Sq`[5]+aov$`Sum Sq`[6]
+#MSB<-SSB/6
+#SSE <- aov$`Sum Sq`[7]
+#MSE <-SSE/479
+#MSB/MSE
+```
+
 **Prediction of used car prices**
 
 8.  Now that we know how to fit a Linear Regression model on your sample dataset, we can finally predicted prices for 3 used cars' data points. Cars 1, 2 and 3 are 5/10/18 years, 48000/90500,120200 mileage, 90/90/90 horsepower, 1165/1240/1275 in weight, 1800/1900/21200 CC and 140/210/300 in quarterly taxes.
@@ -167,6 +205,13 @@ print(paste("95% CI HP slope parameter:" ,lower, upper))
 # Use the regression model for prediction of 3 used cars
 new.data = data.frame (Age_08_04 = c(5, 10, 18), KM = c(48000, 90500, 120200), HP                                   = c(90, 90, 90),  Weight = c(1165, 1240, 1275), CC =                         c(1800,1900,2100),Quarterly_Tax=c(140,210,300))
 
+
+
+# Use the regression model for prediction of 1 used cars
+new.data = data.frame (Age_08_04 = c(5), KM = c(48000), HP= c(90),  Weight = c(1165), CC = c(1800),Quarterly_Tax=c(140))
+
+predict (fit_ml , newdata = new.data,type = c("response"))
+
 # Compute the 95% confidence interval for the predicted price
 predci.fit_w = predict (fit_ml , newdata = new.data, interval = "confidence")
 predci.fit_w
@@ -174,6 +219,40 @@ predci.fit_w
 # Compute the 95% prediction interval for the predicted price
 pred.fit_w = predict (fit_ml , newdata = new.data, interval = "prediction")
 pred.fit_w
+
+```
+
+```{r}
+
+confidence_intervals <- predict(fit_ml, newdata = usedcars.selectedvar, interval = "confidence")
+predictions <- predict(fit_ml, newdata = usedcars.selectedvar, interval = "prediction")
+
+library(ggplot2)
+
+
+
+# Combine predictions with intervals into a data frame for plotting
+results <- usedcars.selectedvar %>%
+  mutate(
+    Predicted_Price = predictions[, "fit"],
+    Pred_Lower = predictions[, "lwr"],
+    Pred_Upper = predictions[, "upr"],
+    Conf_Lower = confidence_intervals[, "lwr"],
+    Conf_Upper = confidence_intervals[, "upr"]
+  )
+
+# Plot the results
+ggplot(results, aes(x = Age_08_04, y = Predicted_Price)) +
+  geom_point(aes(color = "Predicted Price"), size = 1) +
+  geom_errorbar(aes(ymin = Pred_Lower, ymax = Pred_Upper, color = "Prediction Interval"), width = 0.2) +
+  geom_errorbar(aes(ymin = Conf_Lower, ymax = Conf_Upper, color = "Confidence Interval"), width = 0.5 ) +
+  labs(title = "Price Prediction with Confidence and Prediction Intervals",
+       x = "Age of Car (Years)",
+       y = "Predicted Price",
+       color = "Legend") +
+  theme_minimal()
+
+
 
 
 ```
